@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 class GwtRpcInvocationHandler implements InvocationHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GwtRpcInvocationHandler.class);
@@ -37,15 +38,28 @@ class GwtRpcInvocationHandler implements InvocationHandler {
         this.serializerHander = serializerHandler;
 
         this.methodTable = new HashMap<Method, Method>();
+
         for (Method m : asyncClazz.getMethods()) {
             for (Method m2 : target.getClass().getMethods()) {
                 if (m.getName().equals(m2.getName())
-                        && m.getParameterTypes().length == m2.getParameterTypes().length + 1) {
+                        && m.getParameterTypes().length == m2.getParameterTypes().length + 1
+                        && areParametersWithSameTypes(m.getParameterTypes(), m2.getParameterTypes())
+                        ) {
                     methodTable.put(m, m2);
                     GwtReflectionUtils.makeAccessible(m2);
                 }
             }
         }
+    }
+
+    private boolean areParametersWithSameTypes(Class<?>[] asyncParameters, Class<?>[] targetParameters) {
+        for (int i = 0; i < targetParameters.length; i++) {
+            // test on the class names are the classes from both sides are not loaded by the same classloader
+            if (!targetParameters[i].getName().equals(asyncParameters[i].getName())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @SuppressWarnings("unchecked")
